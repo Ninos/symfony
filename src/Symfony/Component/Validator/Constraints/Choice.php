@@ -18,6 +18,7 @@ use Symfony\Component\Validator\Constraint;
  * Validates that a value is one of a given set of valid choices.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
+ * @author Ninos Ego <me@ninosego.de>
  */
 #[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
 class Choice extends Constraint
@@ -32,7 +33,8 @@ class Choice extends Constraint
         self::TOO_MANY_ERROR => 'TOO_MANY_ERROR',
     ];
 
-    public ?array $choices = null;
+    /** @var \class-string|array|null */
+    public string|array|null $choices = null;
     /** @var callable|string|null */
     public $callback;
     public bool $multiple = false;
@@ -45,25 +47,27 @@ class Choice extends Constraint
     public string $maxMessage = 'You must select at most {{ limit }} choice.|You must select at most {{ limit }} choices.';
     public bool $match = true;
 
+    public ?\Closure $normalizer;
+
     public function getDefaultOption(): ?string
     {
         return 'choices';
     }
 
     /**
-     * @param array|null           $choices  An array of choices (required unless a callback is specified)
-     * @param callable|string|null $callback Callback method to use instead of the choice option to get the choices
-     * @param bool|null            $multiple Whether to expect the value to be an array of valid choices (defaults to false)
-     * @param bool|null            $strict   This option defaults to true and should not be used
-     * @param int<0, max>|null     $min      Minimum of valid choices if multiple values are expected
-     * @param positive-int|null    $max      Maximum of valid choices if multiple values are expected
-     * @param string[]|null        $groups
-     * @param bool|null            $match    Whether to validate the values are part of the choices or not (defaults to true)
+     * @param \class-string|array|null $choices  An enum or array of choices (required unless a callback is specified)
+     * @param callable|string|null     $callback Callback method to use instead of the choice option to get the choices
+     * @param bool|null                $multiple Whether to expect the value to be an array of valid choices (defaults to false)
+     * @param bool|null                $strict   This option defaults to true and should not be used
+     * @param int<0, max>|null         $min      Minimum of valid choices if multiple values are expected
+     * @param positive-int|null        $max      Maximum of valid choices if multiple values are expected
+     * @param string[]|null            $groups
+     * @param bool|null                $match    Whether to validate the values are part of the choices or not (defaults to true)
      */
     #[HasNamedArguments]
     public function __construct(
         string|array $options = [],
-        ?array $choices = null,
+        string|array|null $choices = null,
         callable|string|null $callback = null,
         ?bool $multiple = null,
         ?bool $strict = null,
@@ -73,11 +77,12 @@ class Choice extends Constraint
         ?string $multipleMessage = null,
         ?string $minMessage = null,
         ?string $maxMessage = null,
+        ?callable $normalizer = null,
         ?array $groups = null,
         mixed $payload = null,
         ?bool $match = null,
     ) {
-        if (\is_array($options) && $options && array_is_list($options)) {
+        if (\is_array($options) && $options && \array_is_list($options)) {
             $choices ??= $options;
             $options = [];
         } elseif (\is_array($options) && [] !== $options) {
@@ -100,5 +105,6 @@ class Choice extends Constraint
         $this->minMessage = $minMessage ?? $this->minMessage;
         $this->maxMessage = $maxMessage ?? $this->maxMessage;
         $this->match = $match ?? $this->match;
+        $this->normalizer = null !== $normalizer ? $normalizer(...) : null;
     }
 }

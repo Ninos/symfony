@@ -11,7 +11,10 @@
 
 namespace Symfony\Component\Validator\Tests\Fixtures;
 
-enum TestEnum
+/**
+ * @author Ninos Ego <me@ninosego.de>
+ */
+enum TestEnumUnit
 {
     case FirstCase;
     case SecondCase;

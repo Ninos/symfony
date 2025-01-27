@@ -33,7 +33,7 @@ class Cidr extends Constraint
 
     protected const ERROR_NAMES = [
         self::INVALID_CIDR_ERROR => 'INVALID_CIDR_ERROR',
-        self::OUT_OF_RANGE_ERROR => 'OUT_OF_RANGE_VIOLATION',
+        self::OUT_OF_RANGE_ERROR => 'OUT_OF_RANGE_ERROR',
     ];
 
     private const NET_MAXES = [

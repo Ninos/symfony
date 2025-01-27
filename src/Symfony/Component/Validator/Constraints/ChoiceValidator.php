@@ -24,6 +24,7 @@ use Symfony\Component\Validator\Exception\UnexpectedValueException;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  * @author Bernhard Schussek <bschussek@gmail.com>
+ * @author Ninos Ego <me@ninosego.de>
  */
 class ChoiceValidator extends ConstraintValidator
 {
@@ -33,16 +34,24 @@ class ChoiceValidator extends ConstraintValidator
             throw new UnexpectedTypeException($constraint, Choice::class);
         }
 
-        if (!\is_array($constraint->choices) && !$constraint->callback) {
+        if (null === $constraint->choices && !$constraint->callback) {
             throw new ConstraintDefinitionException('Either "choices" or "callback" must be specified on constraint Choice.');
+        }
+
+        if (null !== $constraint->choices && !\is_array($constraint->choices) && (!\is_string($constraint->choices) || !\enum_exists($constraint->choices))) {
+            throw new ConstraintDefinitionException('"choices" must be of type array or enum-class.');
         }
 
         if (null === $value) {
             return;
         }
 
-        if ($constraint->multiple && !\is_array($value)) {
-            throw new UnexpectedValueException($value, 'array');
+        if (null !== $constraint->normalizer) {
+            $value = ($constraint->normalizer)($value);
+        }
+
+        if ($constraint->multiple && !\is_array($value) && !$value instanceof \IteratorAggregate) {
+            throw new UnexpectedValueException($value, 'array|IteratorAggregate');
         }
 
         if ($constraint->callback) {
@@ -56,6 +65,10 @@ class ChoiceValidator extends ConstraintValidator
             if (!\is_array($choices)) {
                 throw new ConstraintDefinitionException(\sprintf('The Choice constraint callback "%s" is expected to return an array, but returned "%s".', trim($this->formatValue($constraint->callback), '"'), get_debug_type($choices)));
             }
+        } elseif (\is_string($constraint->choices) && \enum_exists($constraint->choices)) {
+            $choices = \array_map(static function(\UnitEnum $value): string|int {
+                return $value instanceof \BackedEnum ? $value->value : $value->name;
+            }, $constraint->choices::cases());
         } else {
             $choices = $constraint->choices;
         }

@@ -16,9 +16,19 @@ use Symfony\Component\Validator\Constraints\Choice;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Mapping\Loader\AttributeLoader;
 use Symfony\Component\Validator\Tests\Fixtures\ConstraintChoiceWithPreset;
+use Symfony\Component\Validator\Tests\Fixtures\TestEnumBackendInteger;
+use Symfony\Component\Validator\Tests\Fixtures\TestEnumBackendString;
+use Symfony\Component\Validator\Tests\Fixtures\TestEnumUnit;
 
 class ChoiceTest extends TestCase
 {
+    public function testNormalizerCanBeSet()
+    {
+        $choice = new Choice(normalizer: 'trim');
+
+        $this->assertEquals(trim(...), $choice->normalizer);
+    }
+
     public function testSetDefaultPropertyChoice()
     {
         $constraint = new ConstraintChoiceWithPreset('A');
@@ -52,6 +62,18 @@ class ChoiceTest extends TestCase
         /** @var Choice $stringIndexedConstraint */
         [$stringIndexedConstraint] = $metadata->properties['stringIndexed']->getConstraints();
         self::assertSame(['one' => 1, 'two' => 2], $stringIndexedConstraint->choices);
+
+        /** @var Choice $enumUnitConstraint */
+        [$enumUnitConstraint] = $metadata->properties['enumUnit']->getConstraints();
+        self::assertSame(TestEnumUnit::class, $enumUnitConstraint->choices);
+
+        /** @var Choice $enumBackendStringConstraint */
+        [$enumBackendStringConstraint] = $metadata->properties['enumBackendString']->getConstraints();
+        self::assertSame(TestEnumBackendString::class, $enumBackendStringConstraint->choices);
+
+        /** @var Choice $enumBackendIntegerConstraint */
+        [$enumBackendIntegerConstraint] = $metadata->properties['enumBackendInteger']->getConstraints();
+        self::assertSame(TestEnumBackendInteger::class, $enumBackendIntegerConstraint->choices);
     }
 }
 
@@ -68,4 +90,13 @@ class ChoiceDummy
 
     #[Choice(choices: ['one' => 1, 'two' => 2])]
     private $stringIndexed;
+
+    #[Choice(choices: TestEnumUnit::class)]
+    private $enumUnit;
+
+    #[Choice(choices: TestEnumBackendString::class)]
+    private $enumBackendString;
+
+    #[Choice(choices: TestEnumBackendInteger::class)]
+    private $enumBackendInteger;
 }

@@ -86,7 +86,7 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
         }
 
         if ($value instanceof \UnitEnum) {
-            return $value->name;
+            $value = $value instanceof \BackedEnum ? $value->value : $value->name;
         }
 
         if (\is_object($value)) {

@@ -16,6 +16,9 @@ use Symfony\Component\Validator\Constraints\ChoiceValidator;
 use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
 use Symfony\Component\Validator\Exception\UnexpectedValueException;
 use Symfony\Component\Validator\Test\ConstraintValidatorTestCase;
+use Symfony\Component\Validator\Tests\Fixtures\TestEnumBackendInteger;
+use Symfony\Component\Validator\Tests\Fixtures\TestEnumBackendString;
+use Symfony\Component\Validator\Tests\Fixtures\TestEnumUnit;
 
 function choice_callback()
 {
@@ -119,8 +122,8 @@ class ChoiceValidatorTest extends ConstraintValidatorTestCase
 
     public static function provideConstraintsWithCallbackFunction(): iterable
     {
-        yield 'named arguments, namespaced function' => [new Choice(callback: __NAMESPACE__.'\choice_callback')];
-        yield 'named arguments, closure' => [new Choice(callback: fn () => ['foo', 'bar'])];
+        yield 'named arguments, namespaced function' => [new Choice(callback: __NAMESPACE__ . '\choice_callback')];
+        yield 'named arguments, closure' => [new Choice(callback: fn() => ['foo', 'bar'])];
         yield 'named arguments, static method' => [new Choice(callback: [__CLASS__, 'staticCallback'])];
     }
 
@@ -137,9 +140,9 @@ class ChoiceValidatorTest extends ConstraintValidatorTestCase
 
     public static function provideLegacyConstraintsWithCallbackFunctionDoctrineStyle(): iterable
     {
-        yield 'doctrine style, namespaced function' => [new Choice(['callback' => __NAMESPACE__.'\choice_callback'])];
+        yield 'doctrine style, namespaced function' => [new Choice(['callback' => __NAMESPACE__ . '\choice_callback'])];
         yield 'doctrine style, closure' => [new Choice([
-            'callback' => fn () => ['foo', 'bar'],
+            'callback' => fn() => ['foo', 'bar'],
         ])];
         yield 'doctrine style, static method' => [new Choice(['callback' => [__CLASS__, 'staticCallback']])];
     }
@@ -232,8 +235,8 @@ class ChoiceValidatorTest extends ConstraintValidatorTestCase
     public function testInvalidChoiceEmptyChoices()
     {
         $constraint = new Choice(
-            // May happen when the choices are provided dynamically, e.g. from
-            // the DB or the model
+        // May happen when the choices are provided dynamically, e.g. from
+        // the DB or the model
             choices: [],
             message: 'myMessage',
         );
@@ -262,6 +265,7 @@ class ChoiceValidatorTest extends ConstraintValidatorTestCase
             ->setCode(Choice::NO_SUCH_CHOICE_ERROR)
             ->assertRaised();
     }
+
     /**
      * @group legacy
      */
@@ -441,6 +445,89 @@ class ChoiceValidatorTest extends ConstraintValidatorTestCase
             ->setParameter('{{ choices }}', '"foo", "bar"')
             ->setCode(Choice::NO_SUCH_CHOICE_ERROR)
             ->setInvalidValue('bar')
+            ->assertRaised();
+    }
+
+    public function testValidEnumUnit()
+    {
+        $this->validator->validate('FirstCase', new Choice(
+            choices: TestEnumUnit::class,
+            message: 'myMessage',
+        ));
+
+        $this->assertNoViolation();
+    }
+
+    public function testInvalidEnumUnit()
+    {
+        $this->validator->validate('NoneCase', new Choice(
+            choices: TestEnumUnit::class,
+            message: 'myMessage',
+        ));
+
+        $this->buildViolation('myMessage')
+            ->setParameter('{{ value }}', '"NoneCase"')
+            ->setParameter('{{ choices }}', '"FirstCase", "SecondCase"')
+            ->setCode(Choice::NO_SUCH_CHOICE_ERROR)
+            ->assertRaised();
+    }
+
+    public function testValidEnumBackendString()
+    {
+        $this->validator->validate('a', new Choice(
+            choices: TestEnumBackendString::class,
+            message: 'myMessage',
+        ));
+
+        $this->assertNoViolation();
+    }
+
+    public function testInvalidEnumBackendString()
+    {
+        $this->validator->validate('none', new Choice(
+            choices: TestEnumBackendString::class,
+            message: 'myMessage',
+        ));
+
+        $this->buildViolation('myMessage')
+            ->setParameter('{{ value }}', '"none"')
+            ->setParameter('{{ choices }}', '"a", "b"')
+            ->setCode(Choice::NO_SUCH_CHOICE_ERROR)
+            ->assertRaised();
+    }
+
+    public function testValidEnumBackendInteger()
+    {
+        $this->validator->validate(3, new Choice(
+            choices: TestEnumBackendInteger::class,
+            message: 'myMessage',
+        ));
+
+        $this->assertNoViolation();
+    }
+
+    public function testValidEnumBackendIntegerNormalize()
+    {
+        $this->validator->validate('3', new Choice(
+            choices: TestEnumBackendInteger::class,
+            message: 'myMessage',
+            normalizer: 'intval',
+        ));
+
+        $this->assertNoViolation();
+    }
+
+    public function testInvalidEnumBackendInteger()
+    {
+        $this->validator->validate(9, new Choice(
+            choices: TestEnumBackendInteger::class,
+            message: 'myMessage',
+        ));
+
+        $this->buildViolation('myMessage')
+            ->setParameter('{{ value }}', '9')
+            ->setParameter('{{ choices }}', '3, 4')
+            ->setCode(Choice::NO_SUCH_CHOICE_ERROR)
             ->assertRaised();
     }
 }
